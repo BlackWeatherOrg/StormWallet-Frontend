@@ -78,7 +78,6 @@ const closeMobileMenu = () => {
 </template>
 
 <style>
-
 .header {
   position: fixed;
   top: 0;
@@ -101,7 +100,6 @@ const closeMobileMenu = () => {
   padding: 0 1.25rem;
 }
 
-
 .logo {
   font-size: 1.5rem;
   font-weight: 700;
@@ -119,7 +117,6 @@ const closeMobileMenu = () => {
   background-color: #3b82f6;
   border-radius: 50%;
 }
-
 
 .nav-list {
   display: flex;
@@ -161,7 +158,6 @@ const closeMobileMenu = () => {
   color: #60a5fa;
 }
 
-
 .burger-btn {
   display: none;
   background: none;
@@ -191,7 +187,6 @@ const closeMobileMenu = () => {
 .burger-btn.open .burger-line:nth-child(3) {
   transform: translateY(-7px) rotate(-45deg);
 }
-
 
 .nav-mobile {
   position: fixed;
@@ -228,7 +223,6 @@ const closeMobileMenu = () => {
   color: #60a5fa;
 }
 
-
 .slide-enter-active,
 .slide-leave-active {
   transition:
@@ -241,7 +235,6 @@ const closeMobileMenu = () => {
   transform: translateY(-100%);
   opacity: 0;
 }
-
 
 @media (max-width: 768px) {
   .nav-desktop {

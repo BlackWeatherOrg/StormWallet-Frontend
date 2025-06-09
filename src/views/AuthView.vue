@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AppHeader from '../components/Appheader.vue'
-
+import Appfooter from '@/components/Appfooter.vue'
 const router = useRouter()
 
 const isLoginMode = ref(true)
@@ -123,6 +123,7 @@ const handleSubmit = async () => {
         </div>
       </div>
     </main>
+    <Appfooter />
   </div>
 </template>
 
@@ -184,6 +185,7 @@ const handleSubmit = async () => {
   color: #f3f4f6;
   font-size: 1rem;
   transition: border-color 0.2s;
+  max-width: 95%;
 }
 
 .form-input:focus {
