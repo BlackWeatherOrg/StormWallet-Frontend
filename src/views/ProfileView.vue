@@ -2,38 +2,62 @@
 import { ref, onMounted } from 'vue'
 import AppHeader from '../components/Appheader.vue'
 import Appfooter from '@/components/Appfooter.vue'
-const userData = ref({
-  username: 'ИванПетров',
-  email: 'ivan@example.com',
-  registrationDate: '2023-10-15T14:48:00.000Z',
-})
+import { FetchUser, check } from '@/http/userAPI'
+import { useUserStore } from '@/stores/UserStore'
 
-function getRandomColor() {
-  const colors = [
-    '#3b82f6', 
-    '#ef4444', 
-    '#10b981',
-    '#f59e0b', 
-    '#8b5cf6', 
-    '#ec4899', 
-  ]
-  return colors[Math.floor(Math.random() * colors.length)]
-}
+const userStore = useUserStore()
+const userData = ref({
+  username: '', 
+  email: '',
+  registrationDate: '',
+})
+const isLoading = ref(true)
+const error = ref(null)
+
 const userAvatar = ref('')
 const formattedDate = ref('')
 
+function getRandomColor() {
+  const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899']
+  return colors[Math.floor(Math.random() * colors.length)]
+}
+
+const loadUserData = async () => {
+  try {
+    isLoading.value = true
+    error.value = null
+    const response = await check()
+
+    if (!response) throw new Error('Данные пользователя не получены')
+
+    userData.value = {
+      username: response.email.split('@')[0],
+      email: response.email,
+      registrationDate: response.CreatedAt,
+    }
+
+    if (userData.value.username) {
+      userAvatar.value = userData.value.username.charAt(0).toUpperCase()
+    }
+
+    if (userData.value.registrationDate) {
+      const date = new Date(userData.value.registrationDate)
+      formattedDate.value = date.toLocaleDateString('ru-RU', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
+    }
+  } catch (err) {
+    console.error('Ошибка загрузки данных:', err)
+    error.value = 'Не удалось загрузить данные профиля'
+  } finally {
+    isLoading.value = false
+  }
+}
+
 onMounted(() => {
-  if (userData.value.username) {
-    userAvatar.value = userData.value.username.charAt(0).toUpperCase()
-  }
-  if (userData.value.registrationDate) {
-    const date = new Date(userData.value.registrationDate)
-    formattedDate.value = date.toLocaleDateString('ru-RU', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    })
-  }
+  loadUserData()
 })
 </script>
 
@@ -41,12 +65,18 @@ onMounted(() => {
   <div class="profile-page">
     <AppHeader />
     <main class="profile-container">
-      <div class="profile-card">
+      <div v-if="isLoading" class="loading-state">Загрузка данных профиля...</div>
+
+      <div v-else-if="error" class="error-state">
+        {{ error }}
+        <button @click="loadUserData" class="retry-button">Повторить попытку</button>
+      </div>
+
+      <div v-else class="profile-card">
         <div class="profile-header">
           <div class="avatar" :style="{ backgroundColor: getRandomColor() }">
             {{ userAvatar }}
           </div>
-          <h1 class="username">{{ userData.username }}</h1>
         </div>
 
         <div class="profile-details">
@@ -62,12 +92,10 @@ onMounted(() => {
         </div>
 
         <div class="profile-actions">
-          <button class="action-button edit-button">Редактировать профиль</button>
           <button class="action-button logout-button">Выйти</button>
         </div>
       </div>
     </main>
-    <!-- <Appfooter /> -->
   </div>
 </template>
 
@@ -92,6 +120,35 @@ onMounted(() => {
   max-width: 600px;
   margin: 0 auto;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.loading-state,
+.error-state {
+  text-align: center;
+  padding: 2rem;
+  color: #9ca3af;
+  background-color: #1f2937;
+  border-radius: 0.5rem;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.error-state {
+  color: #ef4444;
+}
+
+.retry-button {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+
+.retry-button:hover {
+  background-color: #2563eb;
 }
 
 .profile-header {

@@ -3,12 +3,15 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AppHeader from '../components/Appheader.vue'
 import Appfooter from '@/components/Appfooter.vue'
+import { registration, login } from '@/http/userAPI'
+import { useUserStore } from '@/stores/UserStore'
+
 const router = useRouter()
+const userStore = useUserStore()
 
 const isLoginMode = ref(true)
 const email = ref('')
 const password = ref('')
-const confirmPassword = ref('')
 const errorMessage = ref('')
 const isLoading = ref(false)
 
@@ -20,11 +23,6 @@ const toggleAuthMode = () => {
 const validateForm = () => {
   if (!email.value || !password.value) {
     errorMessage.value = 'Пожалуйста, заполните все поля'
-    return false
-  }
-
-  if (!isLoginMode.value && password.value !== confirmPassword.value) {
-    errorMessage.value = 'Пароли не совпадают'
     return false
   }
 
@@ -43,13 +41,26 @@ const handleSubmit = async () => {
   errorMessage.value = ''
 
   try {
-    // Здесь будет логика API
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    if (isLoginMode.value) {
+      const userData = await login(email.value, password.value)
+      userStore.setIsAuth(true)
+      userStore.setUser(userData)
+      userStore.setUserId(userData.id)
+      userStore.setIsEmail(email.value)
+    } else {
+      await registration(email.value, password.value)
+      const userData = await login(email.value, password.value) 
+      userStore.setIsAuth(true)
+      userStore.setUser(userData)
+      userStore.setUserId(userData.id)
+      userStore.setIsEmail(email.value)
+    }
     router.push('/')
   } catch (error) {
+    console.error('Ошибка аутентификации:', error)
     errorMessage.value = isLoginMode.value
       ? 'Неверный email или пароль'
-      : 'Пользователь с таким email уже существует'
+      : error.response?.data?.message || 'Ошибка регистрации'
   } finally {
     isLoading.value = false
   }
@@ -88,19 +99,6 @@ const handleSubmit = async () => {
               required
             />
           </div>
-
-          <div class="form-group" v-if="!isLoginMode">
-            <label for="confirmPassword" class="form-label">Подтвердите пароль</label>
-            <input
-              id="confirmPassword"
-              type="password"
-              v-model="confirmPassword"
-              class="form-input"
-              placeholder="Повторите пароль"
-              required
-            />
-          </div>
-
           <div v-if="errorMessage" class="error-message">
             {{ errorMessage }}
           </div>

@@ -1,7 +1,10 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import AppHeader from '../components/Appheader.vue'
-import Appfooter from '@/components/Appfooter.vue'
+import { FetchTag, CreateTag } from '@/http/tagsApi'
+import { useUserStore } from '@/stores/UserStore'
+
+const userStore = useUserStore()
 const selectedDate = ref(new Date().toISOString().split('T')[0])
 const operations = ref([])
 const newOperation = ref({
@@ -10,19 +13,38 @@ const newOperation = ref({
   category: '',
   description: '',
 })
-const categories = ref([
-  'Еда',
-  'Транспорт',
-  'Жилье',
-  'Развлечения',
-  'Здоровье',
-  'Одежда',
-  'Образование',
-  'Другое',
-])
-const incomeCategories = ref(['Зарплата', 'Подарок', 'Инвестиции', 'Возврат', 'Другое'])
+const tags = ref([]) 
 const editingId = ref(null)
 const showForm = ref(false)
+const isLoadingTags = ref(false)
+const newTagName = ref('')
+const showAddTag = ref(false)
+
+const loadTags = async () => {
+  try {
+    isLoadingTags.value = true
+    const response = await FetchTag()
+    tags.value = response.map((tag) => tag.title)
+  } catch (error) {
+    console.error('Ошибка загрузки тегов:', error)
+  } finally {
+    isLoadingTags.value = false
+  }
+}
+
+const createNewTag = async () => {
+  if (!newTagName.value.trim()) return
+
+  try {
+    await CreateTag(newTagName.value.trim())
+    await loadTags() 
+    newOperation.value.category = newTagName.value.trim()
+    newTagName.value = ''
+    showAddTag.value = false
+  } catch (error) {
+    console.error('Ошибка создания тега:', error)
+  }
+}
 
 const filteredOperations = computed(() => {
   return operations.value.filter((op) => op.date === selectedDate.value)
@@ -86,9 +108,11 @@ const resetForm = () => {
   }
   editingId.value = null
   showForm.value = false
+  showAddTag.value = false
 }
 
 onMounted(() => {
+  loadTags()
   operations.value = [
     {
       id: 1,
@@ -163,16 +187,31 @@ onMounted(() => {
 
         <div class="formm-group">
           <label>Категория</label>
-          <select v-model="newOperation.category">
-            <option value="" disabled>Выберите категорию</option>
-            <option
-              v-for="category in newOperation.type === 'income' ? incomeCategories : categories"
-              :key="category"
-              :value="category"
-            >
-              {{ category }}
-            </option>
-          </select>
+          <div class="tag-selector">
+            <select v-model="newOperation.category" :disabled="isLoadingTags">
+              <option value="" disabled>Выберите категорию</option>
+              <option v-for="tag in tags" :key="tag" :value="tag">
+                {{ tag }}
+              </option>
+              <option value="__add_new__">+ Добавить новую категорию</option>
+            </select>
+
+            <div v-if="newOperation.category === '__add_new__'" class="add-tag-form">
+              <input
+                type="text"
+                v-model="newTagName"
+                placeholder="Название новой категории"
+                @keyup.enter="createNewTag"
+              />
+              <button @click="createNewTag" class="small-button">Добавить</button>
+              <button
+                @click="((newOperation.category = ''), (newTagName = ''))"
+                class="small-button cancel"
+              >
+                Отмена
+              </button>
+            </div>
+          </div>
         </div>
 
         <div class="formm-group">
@@ -182,7 +221,7 @@ onMounted(() => {
 
         <div class="form-actions">
           <button @click="resetForm" class="cancel-button">Отмена</button>
-          <button @click="saveOperation" class="save-button">
+          <button @click="saveOperation" class="save-button" :disabled="!newOperation.category">
             {{ editingId ? 'Обновить' : 'Сохранить' }}
           </button>
         </div>
@@ -227,7 +266,42 @@ onMounted(() => {
   background-color: #111827;
   color: #f3f4f6;
 }
+.tag-selector {
+  position: relative;
+}
 
+.add-tag-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.add-tag-form input {
+  flex-grow: 1;
+  padding: 0.5rem;
+  background-color: #374151;
+  border: 1px solid #4b5563;
+  border-radius: 0.25rem;
+  color: #f3f4f6;
+}
+
+.small-button {
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  border: none;
+}
+
+.small-button:not(.cancel) {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.small-button.cancel {
+  background-color: #374151;
+  color: #f3f4f6;
+}
 .dashboard-container {
   max-width: 800px;
   margin: 0 auto;
@@ -335,8 +409,8 @@ onMounted(() => {
   color: #f3f4f6;
   font-size: 1rem;
 }
-.formm-group input{
-    width: 96.5%;
+.formm-group input {
+  width: 96.5%;
 }
 .type-selector {
   display: flex;

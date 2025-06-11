@@ -1,15 +1,29 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { RouterLink } from 'vue-router'
+import { useUserStore } from '@/stores/UserStore'
 
+const userStore = useUserStore()
 const isMobileMenuOpen = ref(false)
-const navItems = ref([
-  { title: 'О нас', path: '/about' },
-  { title: 'Статистика', path: '/statistics' },
-  { title: 'Профиль', path: '/profile' },
-  { title: 'Финансы', path: '/work' },
-  { title: 'Войти', path: '/auth' },
-])
+
+const navItems = computed(() => {
+  const items = [
+    { title: 'О нас', path: '/about' },
+    { title: 'Статистика', path: '/statistics' },
+    { title: 'Профиль', path: '/profile' },
+    { title: 'Финансы', path: '/work' },
+  ]
+  if (userStore.isAuth) {
+    return items
+  }
+  return []
+})
+
+const authItem = computed(() => {
+  return userStore.isAuth
+    ? { title: 'Выйти', path: '/auth', action: () => userStore.setIsAuth(false) }
+    : { title: 'Войти', path: '/auth' }
+})
 
 const toggleMobileMenu = () => {
   isMobileMenuOpen.value = !isMobileMenuOpen.value
@@ -20,6 +34,13 @@ const closeMobileMenu = () => {
   isMobileMenuOpen.value = false
   document.body.style.overflow = ''
 }
+
+const handleAuthClick = (item) => {
+  if (item.action) {
+    item.action()
+  }
+  closeMobileMenu()
+}
 </script>
 
 <template>
@@ -29,8 +50,7 @@ const closeMobileMenu = () => {
         <div class="logo-icon">S</div>
         <span class="logo-text">StormWallet</span>
       </RouterLink>
-
-      <nav class="nav-desktop">
+      <nav class="nav-desktop" v-if="userStore.isAuth">
         <ul class="nav-list">
           <li v-for="(item, index) in navItems" :key="index">
             <RouterLink
@@ -43,9 +63,20 @@ const closeMobileMenu = () => {
               <span class="link-underline"></span>
             </RouterLink>
           </li>
+          <li>
+            <RouterLink :to="authItem.path" class="nav-link" @click="handleAuthClick(authItem)">
+              {{ authItem.title }}
+              <span class="link-underline"></span>
+            </RouterLink>
+          </li>
         </ul>
       </nav>
-
+      <div v-else class="auth-link-desktop">
+        <RouterLink :to="authItem.path" class="nav-link" @click="handleAuthClick(authItem)">
+          {{ authItem.title }}
+          <span class="link-underline"></span>
+        </RouterLink>
+      </div>
       <button
         class="burger-btn"
         @click="toggleMobileMenu"
@@ -68,6 +99,15 @@ const closeMobileMenu = () => {
                 @click="closeMobileMenu"
               >
                 {{ item.title }}
+              </RouterLink>
+            </li>
+            <li>
+              <RouterLink
+                :to="authItem.path"
+                class="nav-link-mobile"
+                @click="handleAuthClick(authItem)"
+              >
+                {{ authItem.title }}
               </RouterLink>
             </li>
           </ul>
@@ -110,12 +150,21 @@ const closeMobileMenu = () => {
   gap: 0.25rem;
 }
 
-.logo-dot {
-  display: inline-block;
-  width: 0.5rem;
-  height: 0.5rem;
+.logo-icon {
+  width: 1.5rem;
+  height: 1.5rem;
   background-color: #3b82f6;
   border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  margin-right: 0.5rem;
+}
+
+.auth-link-desktop {
+  margin-left: auto;
 }
 
 .nav-list {
@@ -237,7 +286,8 @@ const closeMobileMenu = () => {
 }
 
 @media (max-width: 768px) {
-  .nav-desktop {
+  .nav-desktop,
+  .auth-link-desktop {
     display: none;
   }
 

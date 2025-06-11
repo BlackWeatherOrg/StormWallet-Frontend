@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import Appfooter from '@/components/Appfooter.vue'
+import AppHeader from '../components/Appheader.vue'
 const features = ref([
   {
     title: 'Полный контроль',
@@ -22,15 +23,7 @@ const features = ref([
 
 <template>
   <div class="page-container">
-    <header class="header">
-      <div class="header-content">
-        <div class="logo">
-          <div class="logo-icon">S</div>
-          <span class="logo-text">StormWallet</span>
-        </div>
-        <router-link to="/auth" class="auth-buttonn"> Войти </router-link>
-      </div>
-    </header>
+    <AppHeader />
     <main class="main-content">
       <section class="hero-section">
         <h1 class="hero-title">Контроль над вашими <span class="highlight">финансами</span></h1>
@@ -74,57 +67,6 @@ body {
   display: flex;
   flex-direction: column;
 }
-
-.header {
-  width: 100%;
-  padding: 2rem 0;
-}
-
-.header-content {
-  width: 90%;
-  max-width: 1200px;
-  margin: 0 auto;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.logo-icon {
-  width: 2rem;
-  height: 2rem;
-  background-color: #3b82f6;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-weight: bold;
-}
-
-.logo-text {
-  font-size: 1.25rem;
-  font-weight: bold;
-}
-
-.auth-buttonn {
-  padding: 0.5rem 1.5rem;
-  background-color: #2563eb;
-  border-radius: 0.5rem;
-  transition: background-color 0.2s;
-  text-decoration: none;
-  color: white;
-}
-
-.auth-buttonn:hover {
-  background-color: #1d4ed8;
-}
-
 .main-content {
   flex: 1;
   width: 90%;
