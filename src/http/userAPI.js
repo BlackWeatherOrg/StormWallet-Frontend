@@ -3,7 +3,6 @@ import { jwtDecode } from 'jwt-decode'
 
 export const login = async (email, password) => {
   const { data } = await $host.post('users/login', { email, password })
-  console.log(data.token)
   localStorage.setItem('token', data.token)
   const token = localStorage.getItem('token')
   if (!token) {
@@ -16,7 +15,6 @@ export const check = async () => {
   try {
     const token = localStorage.getItem('token')
     const { data } = await $authHost.get('users/me')
-    console.log(data)
     localStorage.setItem('id', data.id)
     return data
   } catch (error) {

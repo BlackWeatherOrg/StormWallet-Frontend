@@ -14,15 +14,6 @@ const authInterceptor = (config) => {
   return config
 }
 
-$authHost.interceptors.request.use(request => {
-  console.log('Starting Request', request)
-  return request
-})
-
-$authHost.interceptors.response.use(response => {
-  console.log('Response:', response)
-  return response
-})
 $authHost.interceptors.request.use(authInterceptor)
 
 export { $host, $authHost }

@@ -1,11 +1,17 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import AppHeader from '../components/Appheader.vue'
-import { FetchTag, CreateTag } from '@/http/tagsApi'
+import { FetchTag, CreateTag, DeleteTag } from '@/http/tagsAPI'
+import {
+  FetchOperation,
+  CreateOperation,
+  DeleteOperation,
+  UpdateOperation,
+} from '@/http/operationAPI'
 import { useUserStore } from '@/stores/UserStore'
 
 const userStore = useUserStore()
-const selectedDate = ref(new Date().toISOString().split('T')[0])
+const selectedDate = ref(new Date().toISOString().split('T')[0] + 'T00:00:00Z')
 const operations = ref([])
 const newOperation = ref({
   type: 'expense',
@@ -13,41 +19,130 @@ const newOperation = ref({
   category: '',
   description: '',
 })
-const tags = ref([]) 
+const tags = ref([])
 const editingId = ref(null)
 const showForm = ref(false)
-const isLoadingTags = ref(false)
+const isLoading = ref(false)
 const newTagName = ref('')
 const showAddTag = ref(false)
+const errorMessage = ref('')
+const deletingTagId = ref(null)
 
-const loadTags = async () => {
+const loadData = async () => {
   try {
-    isLoadingTags.value = true
-    const response = await FetchTag()
-    tags.value = response.map((tag) => tag.title)
+    isLoading.value = true
+    errorMessage.value = ''
+    const tagsResponse = await FetchTag()
+    tags.value = tagsResponse
+    const operationsResponse = await FetchOperation()
+    operations.value = operationsResponse.map((op) => ({
+      id: op.ID,
+      date: op.Date.split('T')[0],
+      type: op.type,
+      amount: op.amount,
+      category: tags.value.find((tag) => tag.id === op.tag_id)?.title || 'Неизвестно',
+      description: op.description || '',
+    }))
   } catch (error) {
-    console.error('Ошибка загрузки тегов:', error)
+    console.error('Ошибка загрузки данных:', error)
+    errorMessage.value = 'Не удалось загрузить данные'
   } finally {
-    isLoadingTags.value = false
+    isLoading.value = false
   }
 }
 
 const createNewTag = async () => {
   if (!newTagName.value.trim()) return
-
   try {
+    isLoading.value = true
     await CreateTag(newTagName.value.trim())
-    await loadTags() 
+    await loadData()
     newOperation.value.category = newTagName.value.trim()
     newTagName.value = ''
     showAddTag.value = false
   } catch (error) {
     console.error('Ошибка создания тега:', error)
+    errorMessage.value = 'Ошибка создания категории'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const deleteSelectedTag = async () => {
+  if (!newOperation.value.category) return
+
+  const selectedTag = tags.value.find((tag) => tag.title === newOperation.value.category)
+
+  if (!selectedTag) return
+
+  try {
+    if (!confirm(`Вы уверены, что хотите удалить категорию "${selectedTag.title}"?`)) return
+
+    isLoading.value = true
+    deletingTagId.value = selectedTag.id
+    await DeleteTag(selectedTag.id)
+    await loadData()
+    newOperation.value.category = ''
+  } catch (error) {
+    console.error('Ошибка удаления тега:', error)
+    errorMessage.value = 'Ошибка удаления категории'
+  } finally {
+    isLoading.value = false
+    deletingTagId.value = null
+  }
+}
+
+const saveOperation = async () => {
+  if (!newOperation.value.amount || !newOperation.value.category) return
+
+  try {
+    isLoading.value = true
+    errorMessage.value = ''
+    const tag = tags.value.find(
+      (t) => t.title.trim().toLowerCase() === newOperation.value.category.trim().toLowerCase(),
+    )
+    if (!tag) throw new Error('Категория не найдена')
+
+    const operationData = {
+      tag_id: tag.ID,
+      type: newOperation.value.type,
+      amount: parseFloat(newOperation.value.amount),
+      Date: selectedDate.value,
+    }
+
+    if (editingId.value) {
+      await UpdateOperation(editingId.value, operationData)
+    } else {
+      await CreateOperation(operationData)
+    }
+
+    await loadData()
+    resetForm()
+  } catch (error) {
+    console.error('Ошибка сохранения операции:', error)
+    errorMessage.value = 'Ошибка сохранения операции'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const deleteOperation = async (id) => {
+  try {
+    if (!confirm('Вы уверены, что хотите удалить эту операцию?')) return
+
+    isLoading.value = true
+    await DeleteOperation(id)
+    await loadData()
+  } catch (error) {
+    console.error('Ошибка удаления операции:', error)
+    errorMessage.value = 'Ошибка удаления операции'
+  } finally {
+    isLoading.value = false
   }
 }
 
 const filteredOperations = computed(() => {
-  return operations.value.filter((op) => op.date === selectedDate.value)
+  return operations.value.filter((op) => op.date === selectedDate.value.split('T')[0])
 })
 
 const totalExpenses = computed(() => {
@@ -66,37 +161,10 @@ const dailyBalance = computed(() => {
   return totalIncome.value - totalExpenses.value
 })
 
-const saveOperation = () => {
-  if (!newOperation.value.amount || !newOperation.value.category) return
-
-  if (editingId.value) {
-    const index = operations.value.findIndex((op) => op.id === editingId.value)
-    if (index !== -1) {
-      operations.value[index] = {
-        ...newOperation.value,
-        id: editingId.value,
-        date: selectedDate.value,
-      }
-    }
-  } else {
-    operations.value.push({
-      id: Date.now(),
-      date: selectedDate.value,
-      ...newOperation.value,
-    })
-  }
-
-  resetForm()
-}
-
 const editOperation = (operation) => {
   newOperation.value = { ...operation }
   editingId.value = operation.id
   showForm.value = true
-}
-
-const deleteOperation = (id) => {
-  operations.value = operations.value.filter((op) => op.id !== id)
 }
 
 const resetForm = () => {
@@ -112,25 +180,7 @@ const resetForm = () => {
 }
 
 onMounted(() => {
-  loadTags()
-  operations.value = [
-    {
-      id: 1,
-      date: new Date().toISOString().split('T')[0],
-      type: 'expense',
-      amount: '1500',
-      category: 'Еда',
-      description: 'Продукты на неделю',
-    },
-    {
-      id: 2,
-      date: new Date().toISOString().split('T')[0],
-      type: 'income',
-      amount: '50000',
-      category: 'Зарплата',
-      description: 'Зарплата за месяц',
-    },
-  ]
+  loadData()
 })
 </script>
 
@@ -139,9 +189,21 @@ onMounted(() => {
     <AppHeader />
 
     <main class="dashboard-container">
+      <div v-if="errorMessage" class="error-message">
+        {{ errorMessage }}
+      </div>
+
       <div class="date-selector">
-        <input type="date" v-model="selectedDate" class="date-input" />
-        <button @click="showForm = true" class="add-button">+ Добавить операцию</button>
+        <input
+          type="date"
+          :value="selectedDate.split('T')[0]"
+          @input="selectedDate = `${$event.target.value}T00:00:00Z`"
+          class="date-input"
+          :disabled="isLoading"
+        />
+        <button @click="showForm = true" class="add-button" :disabled="isLoading">
+          + Добавить операцию
+        </button>
       </div>
 
       <div class="daily-stats">
@@ -159,7 +221,7 @@ onMounted(() => {
         </div>
       </div>
 
-      <div v-if="showForm" class="operation-form">
+      <div v-if="showForm" class="operation-formm">
         <h2>{{ editingId ? 'Редактировать операцию' : 'Добавить операцию' }}</h2>
 
         <div class="formm-group">
@@ -168,12 +230,14 @@ onMounted(() => {
             <button
               @click="newOperation.type = 'income'"
               :class="{ active: newOperation.type === 'income' }"
+              :disabled="isLoading"
             >
               Доход
             </button>
             <button
               @click="newOperation.type = 'expense'"
               :class="{ active: newOperation.type === 'expense' }"
+              :disabled="isLoading"
             >
               Расход
             </button>
@@ -182,31 +246,50 @@ onMounted(() => {
 
         <div class="formm-group">
           <label>Сумма (₽)</label>
-          <input type="number" v-model="newOperation.amount" placeholder="Введите сумму" />
+          <input
+            type="number"
+            v-model="newOperation.amount"
+            placeholder="Введите сумму"
+            :disabled="isLoading"
+          />
         </div>
 
         <div class="formm-group">
           <label>Категория</label>
           <div class="tag-selector">
-            <select v-model="newOperation.category" :disabled="isLoadingTags">
-              <option value="" disabled>Выберите категорию</option>
-              <option v-for="tag in tags" :key="tag" :value="tag">
-                {{ tag }}
-              </option>
-              <option value="__add_new__">+ Добавить новую категорию</option>
-            </select>
+            <div class="select-with-button">
+              <select v-model="newOperation.category" :disabled="isLoading">
+                <option value="" disabled>Выберите категорию</option>
+                <option v-for="tag in tags" :key="tag.id" :value="tag.title">
+                  {{ tag.title }}
+                </option>
+                <option value="__add_new__">+ Добавить новую категорию</option>
+              </select>
+              <button
+                v-if="newOperation.category && newOperation.category !== '__add_new__'"
+                @click="deleteSelectedTag"
+                class="delete-tag-btn"
+                :disabled="isLoading || deletingTagId"
+              >
+                🗑️
+              </button>
+            </div>
 
-            <div v-if="newOperation.category === '__add_new__'" class="add-tag-form">
+            <div v-if="newOperation.category === '__add_new__'" class="add-tag-formm">
               <input
                 type="text"
                 v-model="newTagName"
                 placeholder="Название новой категории"
                 @keyup.enter="createNewTag"
+                :disabled="isLoading"
               />
-              <button @click="createNewTag" class="small-button">Добавить</button>
+              <button @click="createNewTag" class="small-button" :disabled="isLoading">
+                Добавить
+              </button>
               <button
-                @click="((newOperation.category = ''), (newTagName = ''))"
+                @click="newOperation.category = ''"
                 class="small-button cancel"
+                :disabled="isLoading"
               >
                 Отмена
               </button>
@@ -214,15 +297,14 @@ onMounted(() => {
           </div>
         </div>
 
-        <div class="formm-group">
-          <label>Описание (необязательно)</label>
-          <input type="text" v-model="newOperation.description" placeholder="Краткое описание" />
-        </div>
-
-        <div class="form-actions">
-          <button @click="resetForm" class="cancel-button">Отмена</button>
-          <button @click="saveOperation" class="save-button" :disabled="!newOperation.category">
-            {{ editingId ? 'Обновить' : 'Сохранить' }}
+        <div class="formm-actions">
+          <button @click="resetForm" class="cancel-button" :disabled="isLoading">Отмена</button>
+          <button
+            @click="saveOperation"
+            class="save-button"
+            :disabled="!newOperation.category || isLoading"
+          >
+            {{ isLoading ? 'Загрузка...' : editingId ? 'Обновить' : 'Сохранить' }}
           </button>
         </div>
       </div>
@@ -230,7 +312,9 @@ onMounted(() => {
       <div class="operations-list">
         <h2>Операции за {{ new Date(selectedDate).toLocaleDateString('ru-RU') }}</h2>
 
-        <div v-if="filteredOperations.length === 0" class="empty-state">
+        <div v-if="isLoading" class="loading-state">Загрузка операций...</div>
+
+        <div v-else-if="filteredOperations.length === 0" class="empty-state">
           <p>Нет операций за выбранную дату</p>
         </div>
 
@@ -249,14 +333,21 @@ onMounted(() => {
               {{ operation.type === 'expense' ? '-' : '+' }}{{ operation.amount }} ₽
             </div>
             <div class="operation-actions">
-              <button @click="editOperation(operation)" class="edit-button">✏️</button>
-              <button @click="deleteOperation(operation.id)" class="delete-button">🗑️</button>
+              <button @click="editOperation(operation)" class="edit-button" :disabled="isLoading">
+                ✏️
+              </button>
+              <button
+                @click="deleteOperation(operation.id)"
+                class="delete-button"
+                :disabled="isLoading"
+              >
+                🗑️
+              </button>
             </div>
           </div>
         </div>
       </div>
     </main>
-    <!-- <Appfooter /> -->
   </div>
 </template>
 
@@ -266,42 +357,7 @@ onMounted(() => {
   background-color: #111827;
   color: #f3f4f6;
 }
-.tag-selector {
-  position: relative;
-}
 
-.add-tag-form {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-}
-
-.add-tag-form input {
-  flex-grow: 1;
-  padding: 0.5rem;
-  background-color: #374151;
-  border: 1px solid #4b5563;
-  border-radius: 0.25rem;
-  color: #f3f4f6;
-}
-
-.small-button {
-  padding: 0.5rem 1rem;
-  border-radius: 0.25rem;
-  font-size: 0.875rem;
-  cursor: pointer;
-  border: none;
-}
-
-.small-button:not(.cancel) {
-  background-color: #3b82f6;
-  color: white;
-}
-
-.small-button.cancel {
-  background-color: #374151;
-  color: #f3f4f6;
-}
 .dashboard-container {
   max-width: 800px;
   margin: 0 auto;
@@ -309,11 +365,20 @@ onMounted(() => {
   padding-top: 6rem;
 }
 
+.error-message {
+  color: #ef4444;
+  background-color: #1f2937;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+}
+
 .date-selector {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
+  gap: 1rem;
 }
 
 .date-input {
@@ -323,6 +388,7 @@ onMounted(() => {
   border-radius: 0.5rem;
   color: #f3f4f6;
   font-size: 1rem;
+  flex: 1;
 }
 
 .add-button {
@@ -338,6 +404,11 @@ onMounted(() => {
 
 .add-button:hover {
   background-color: #2563eb;
+}
+
+.add-button:disabled {
+  background-color: #374151;
+  cursor: not-allowed;
 }
 
 .daily-stats {
@@ -378,27 +449,29 @@ onMounted(() => {
   color: #60a5fa;
 }
 
-.operation-form {
+.operation-formm {
   background-color: #1f2937;
   border-radius: 0.5rem;
   padding: 1.5rem;
   margin-bottom: 2rem;
 }
 
-.operation-form h2 {
+.operation-formm h2 {
   margin-top: 0;
   color: #60a5fa;
 }
 
 .formm-group {
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .formm-group label {
   display: block;
   margin-bottom: 0.5rem;
   color: #d1d5db;
+  font-weight: 500;
 }
+
 .formm-group input,
 .formm-group select {
   width: 100%;
@@ -425,13 +498,96 @@ onMounted(() => {
   border-radius: 0.375rem;
   color: #f3f4f6;
   cursor: pointer;
+  transition: background-color 0.2s;
 }
 
 .type-selector button.active {
   background-color: #3b82f6;
 }
 
-.form-actions {
+.type-selector button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.tag-selector {
+  position: relative;
+}
+
+.select-with-button {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.delete-tag-btn {
+  background-color: #ef4444;
+  border: none;
+  border-radius: 0.375rem;
+  color: white;
+  padding: 0 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.delete-tag-btn:hover {
+  background-color: #dc2626;
+}
+
+.delete-tag-btn:disabled {
+  background-color: #7f1d1d;
+  cursor: not-allowed;
+}
+
+.add-tag-formm {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.add-tag-formm input {
+  flex-grow: 1;
+  padding: 0.75rem;
+  background-color: #374151;
+  border: 1px solid #4b5563;
+  border-radius: 0.375rem;
+  color: #f3f4f6;
+}
+
+.small-button {
+  padding: 0.75rem 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.2s;
+}
+
+.small-button:not(.cancel) {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.small-button:not(.cancel):hover {
+  background-color: #2563eb;
+}
+
+.small-button.cancel {
+  background-color: #374151;
+  color: #f3f4f6;
+}
+
+.small-button.cancel:hover {
+  background-color: #4b5563;
+}
+
+.small-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.formm-actions {
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;
@@ -445,6 +601,11 @@ onMounted(() => {
   border-radius: 0.375rem;
   color: #f3f4f6;
   cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.cancel-button:hover {
+  background-color: rgba(255, 255, 255, 0.05);
 }
 
 .save-button {
@@ -454,6 +615,16 @@ onMounted(() => {
   border-radius: 0.375rem;
   color: white;
   cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.save-button:hover {
+  background-color: #059669;
+}
+
+.save-button:disabled {
+  background-color: #374151;
+  cursor: not-allowed;
 }
 
 .operations-list h2 {
@@ -461,6 +632,7 @@ onMounted(() => {
   margin-bottom: 1rem;
 }
 
+.loading-state,
 .empty-state {
   text-align: center;
   padding: 2rem;
@@ -497,11 +669,11 @@ onMounted(() => {
   margin: 0 1rem;
 }
 
-.operation-amount.income {
+.operation-item.income .operation-amount {
   color: #10b981;
 }
 
-.operation-amount.expense {
+.operation-item.expense .operation-amount {
   color: #ef4444;
 }
 
@@ -517,6 +689,7 @@ onMounted(() => {
   cursor: pointer;
   font-size: 1.25rem;
   padding: 0.5rem;
+  transition: opacity 0.2s;
 }
 
 .edit-button:hover {
@@ -525,6 +698,12 @@ onMounted(() => {
 
 .delete-button:hover {
   color: #ef4444;
+}
+
+.edit-button:disabled,
+.delete-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 @media (max-width: 768px) {
@@ -539,12 +718,19 @@ onMounted(() => {
 
   .date-selector {
     flex-direction: column;
-    gap: 1rem;
   }
 
-  .date-input,
-  .add-button {
+  .select-with-button {
+    flex-direction: column;
+  }
+
+  .delete-tag-btn {
+    padding: 0.75rem;
     width: 100%;
+  }
+
+  .add-tag-formm {
+    flex-direction: column;
   }
 }
 </style>

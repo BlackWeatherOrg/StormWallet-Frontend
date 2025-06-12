@@ -19,3 +19,11 @@ export const CreateTag = async (title) => {
     throw error
   }
 }
+export const DeleteTag = async (id) => {
+  try {
+    const { data } = await $authHost.delete('tags', { params: { id: id } })
+    return data
+  } catch (error) {
+    throw error
+  }
+}
