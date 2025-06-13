@@ -12,7 +12,7 @@ const selectedPeriod = ref('month')
 const operations = ref([
   {
     id: 1,
-    date: '2023-11-01',
+    date: '2025-11-01',
     type: 'income',
     amount: '50000',
     category: 'Зарплата',
@@ -20,7 +20,7 @@ const operations = ref([
   },
   {
     id: 2,
-    date: '2023-11-02',
+    date: '2025-11-02',
     type: 'expense',
     amount: '1500',
     category: 'Еда',
@@ -28,7 +28,7 @@ const operations = ref([
   },
   {
     id: 3,
-    date: '2023-11-05',
+    date: '2025-11-05',
     type: 'expense',
     amount: '3000',
     category: 'Транспорт',
@@ -36,7 +36,7 @@ const operations = ref([
   },
   {
     id: 4,
-    date: '2023-11-10',
+    date: '2025-11-10',
     type: 'income',
     amount: '10000',
     category: 'Фриланс',
@@ -44,7 +44,7 @@ const operations = ref([
   },
   {
     id: 5,
-    date: '2023-11-15',
+    date: '2025-11-15',
     type: 'expense',
     amount: '5000',
     category: 'Развлечения',

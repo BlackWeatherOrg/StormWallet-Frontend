@@ -4,10 +4,12 @@ import AppHeader from '../components/Appheader.vue'
 import Appfooter from '@/components/Appfooter.vue'
 import { FetchUser, check } from '@/http/userAPI'
 import { useUserStore } from '@/stores/UserStore'
+import { useRouter } from 'vue-router'
+const router = useRouter()
 
 const userStore = useUserStore()
 const userData = ref({
-  username: '', 
+  username: '',
   email: '',
   registrationDate: '',
 })
@@ -20,6 +22,11 @@ const formattedDate = ref('')
 function getRandomColor() {
   const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899']
   return colors[Math.floor(Math.random() * colors.length)]
+}
+
+const Logout = () => {
+  userStore.setIsAuth(false)
+  router.push('/')
 }
 
 const loadUserData = async () => {
@@ -92,7 +99,7 @@ onMounted(() => {
         </div>
 
         <div class="profile-actions">
-          <button class="action-button logout-button">Выйти</button>
+          <button class="action-button logout-button" @click="Logout">Выйти</button>
         </div>
       </div>
     </main>
