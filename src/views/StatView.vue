@@ -1,7 +1,11 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { Chart, registerables } from 'chart.js'
 import AppHeader from '../components/Appheader.vue'
 import Appfooter from '@/components/Appfooter.vue'
+
+Chart.register(...registerables)
+
 const selectedPeriod = ref('month')
 
 // Моковые данные
@@ -157,6 +161,123 @@ const formatCurrency = (value) => {
     maximumFractionDigits: 2,
   })
 }
+
+let incomeExpenseChart = null
+let expensesByCategoryChart = null
+
+onMounted(() => {
+  createCharts()
+})
+
+const createCharts = () => {
+  if (incomeExpenseChart) {
+    incomeExpenseChart.destroy()
+  }
+  if (expensesByCategoryChart) {
+    expensesByCategoryChart.destroy()
+  }
+
+  const incomeExpenseCtx = document.getElementById('incomeExpenseChart')
+  incomeExpenseChart = new Chart(incomeExpenseCtx, {
+    type: 'line',
+    data: {
+      labels: chartData.value.daily.map((item) => item.date),
+      datasets: [
+        {
+          label: 'Доходы',
+          data: chartData.value.daily.map((item) => item.income),
+          borderColor: colors.income,
+          backgroundColor: colors.income + '20',
+          tension: 0.1,
+          fill: true,
+        },
+        {
+          label: 'Расходы',
+          data: chartData.value.daily.map((item) => item.expenses),
+          borderColor: colors.expenses,
+          backgroundColor: colors.expenses + '20',
+          tension: 0.1,
+          fill: true,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: {
+            color: '#f3f4f6',
+          },
+        },
+        tooltip: {
+          callbacks: {
+            label: function (context) {
+              return context.dataset.label + ': ' + formatCurrency(context.raw) + ' ₽'
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          ticks: {
+            color: '#9ca3af',
+          },
+          grid: {
+            color: '#374151',
+          },
+        },
+        y: {
+          ticks: {
+            color: '#9ca3af',
+            callback: function (value) {
+              return formatCurrency(value) + ' ₽'
+            },
+          },
+          grid: {
+            color: '#374151',
+          },
+        },
+      },
+    },
+  })
+  const expensesByCategoryCtx = document.getElementById('expensesByCategoryChart')
+  expensesByCategoryChart = new Chart(expensesByCategoryCtx, {
+    type: 'doughnut',
+    data: {
+      labels: chartData.value.categories.expenses.map((item) => item.name),
+      datasets: [
+        {
+          data: chartData.value.categories.expenses.map((item) => item.value),
+          backgroundColor: colors.categories,
+          borderColor: '#1f2937',
+          borderWidth: 1,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: {
+            color: '#f3f4f6',
+          },
+        },
+        tooltip: {
+          callbacks: {
+            label: function (context) {
+              const value = context.raw
+              const total = context.dataset.data.reduce((a, b) => a + b, 0)
+              const percentage = Math.round((value / total) * 100)
+              return `${context.label}: ${formatCurrency(value)} ₽ (${percentage}%)`
+            },
+          },
+        },
+      },
+    },
+  })
+}
 </script>
 
 <template>
@@ -200,28 +321,15 @@ const formatCurrency = (value) => {
       <div class="charts-section">
         <div class="chart-container">
           <h3>Динамика доходов и расходов</h3>
-          <div class="chart-placeholder">
-            <ul>
-              <li v-for="day in chartData.daily" :key="day.date">
-                {{ day.date }}: Доходы {{ day.income.toFixed(2) }} ₽, Расходы
-                {{ day.expenses.toFixed(2) }} ₽
-              </li>
-            </ul>
+          <div class="chart-wrapper">
+            <canvas id="incomeExpenseChart"></canvas>
           </div>
         </div>
 
         <div class="chart-container">
           <h3>Структура расходов</h3>
-          <div class="chart-placeholder">
-            <ul>
-              <li v-for="(cat, index) in chartData.categories.expenses" :key="cat.name">
-                <span
-                  class="category-color"
-                  :style="{ backgroundColor: colors.categories[index] }"
-                ></span>
-                {{ cat.name }}: {{ formatCurrency(cat.value) }} ₽
-              </li>
-            </ul>
+          <div class="chart-wrapper">
+            <canvas id="expensesByCategoryChart"></canvas>
           </div>
         </div>
       </div>
@@ -397,25 +505,13 @@ const formatCurrency = (value) => {
   font-size: 1.25rem;
 }
 
-.chart-placeholder {
-  height: 300px;
+.chart-wrapper {
+  height: 400px;
+  position: relative;
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
-  color: #9ca3af;
-  text-align: center;
 }
-
-.chart-placeholder ul {
-  text-align: left;
-  padding-left: 1.5rem;
-}
-
-.chart-placeholder li {
-  margin-bottom: 0.5rem;
-}
-
 .categories-section {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -479,9 +575,14 @@ th {
     grid-template-columns: 1fr;
   }
 
-  .chart-placeholder {
-    height: auto;
-    padding: 1rem;
+  .chart-wrapper {
+    height: 250px;
+    margin: 0 auto;
+    max-width: 100%;
+  }
+  #expensesByCategoryChart {
+    max-width: 100%;
+    margin: 0 auto;
   }
 }
 </style>
