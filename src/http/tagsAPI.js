@@ -13,7 +13,6 @@ export const FetchTag = async () => {
 export const CreateTag = async (title) => {
   try {
     const { data } = await $authHost.post('tags/', { title })
-    console.log(data)
     return data
   } catch (error) {
     throw error
@@ -21,7 +20,7 @@ export const CreateTag = async (title) => {
 }
 export const DeleteTag = async (id) => {
   try {
-    const { data } = await $authHost.delete('tags', { params: { id: id } })
+    const { data } = await $authHost.delete(`tags/${id}`)
     return data
   } catch (error) {
     throw error

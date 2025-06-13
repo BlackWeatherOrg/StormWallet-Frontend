@@ -12,24 +12,34 @@ export const FetchOperation = async () => {
 
 export const CreateOperation = async (tag_id, type, amount, Date) => {
   try {
-    const { data } = await $authHost.post('operations/', { tag_id, type, amount, Date })
-    console.log(data)
+    const { data } = await $authHost.post('operations/', {
+      tag_id,
+      type,
+      amount,
+      Date,
+    })
     return data
   } catch (error) {
+    console.error('Error in CreateOperation:', error)
     throw error
   }
 }
 export const DeleteOperation = async (id) => {
   try {
-    const { data } = await $authHost.delete('operations/', { params: { id: id } })
+    const { data } = await $authHost.delete(`operations/${id}`)
     return data
   } catch (error) {
     throw error
   }
 }
-export const UpdateOperation = async (id, operationData) => {
+export const UpdateOperation = async (id, tag_id, type, amount, Date) => {
   try {
-    const { data } = await $authHost.put(`operations/${id}`, operationData)
+    const { data } = await $authHost.put(`operations/${id}`, {
+      tag_id,
+      type,
+      amount,
+      Date,
+    })
     return data
   } catch (error) {
     throw error

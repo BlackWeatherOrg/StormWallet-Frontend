@@ -25,7 +25,6 @@ export const check = async () => {
 export const FetchUser = async (id) => {
   try {
     const { data } = await $authHost.get(`users/${id}`)
-    console.log(data)
     return data
   } catch (error) {
     console.error('Ошибка при проверке пользователя:', error)
@@ -34,9 +33,7 @@ export const FetchUser = async (id) => {
 }
 export const registration = async (email, password) => {
   try {
-    console.log(email, password)
     const { data } = await $host.post('users/', { email, password })
-    console.log(data)
     localStorage.setItem('message', data.message)
     return data.message
   } catch (error) {

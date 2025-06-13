@@ -10,8 +10,8 @@ const navItems = computed(() => {
   const items = [
     { title: 'О нас', path: '/about' },
     { title: 'Статистика', path: '/statistics' },
-    { title: 'Профиль', path: '/profile' },
     { title: 'Финансы', path: '/work' },
+    { title: 'Профиль', path: '/profile' },
   ]
   if (userStore.isAuth) {
     return items

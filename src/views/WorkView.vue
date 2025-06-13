@@ -37,11 +37,10 @@ const loadData = async () => {
     const operationsResponse = await FetchOperation()
     operations.value = operationsResponse.map((op) => ({
       id: op.ID,
-      date: op.Date.split('T')[0],
+      date: op.date.split('T')[0],
       type: op.type,
       amount: op.amount,
-      category: tags.value.find((tag) => tag.id === op.tag_id)?.title || 'Неизвестно',
-      description: op.description || '',
+      category: op.tag?.title || 'Неизвестно',
     }))
   } catch (error) {
     console.error('Ошибка загрузки данных:', error)
@@ -70,17 +69,17 @@ const createNewTag = async () => {
 
 const deleteSelectedTag = async () => {
   if (!newOperation.value.category) return
-
-  const selectedTag = tags.value.find((tag) => tag.title === newOperation.value.category)
-
-  if (!selectedTag) return
+  const tag = tags.value.find(
+    (t) => t.title.trim().toLowerCase() === newOperation.value.category.trim().toLowerCase(),
+  )
+  if (!tag) throw new Error('Категория не найдена')
 
   try {
-    if (!confirm(`Вы уверены, что хотите удалить категорию "${selectedTag.title}"?`)) return
+    if (!confirm(`Вы уверены, что хотите удалить категорию "${tag.title}"?`)) return
 
     isLoading.value = true
-    deletingTagId.value = selectedTag.id
-    await DeleteTag(selectedTag.id)
+    deletingTagId.value = tag.ID
+    await DeleteTag(tag.ID)
     await loadData()
     newOperation.value.category = ''
   } catch (error) {
@@ -111,9 +110,19 @@ const saveOperation = async () => {
     }
 
     if (editingId.value) {
-      await UpdateOperation(editingId.value, operationData)
+      await UpdateOperation(
+        editingId.value,         
+        tag.ID,
+        newOperation.value.type,
+        parseFloat(newOperation.value.amount),
+        selectedDate.value,)
     } else {
-      await CreateOperation(operationData)
+      await CreateOperation(
+        tag.ID,
+        newOperation.value.type,
+        parseFloat(newOperation.value.amount),
+        selectedDate.value,
+      )
     }
 
     await loadData()
