@@ -21,7 +21,14 @@ const navItems = computed(() => {
 
 const authItem = computed(() => {
   return userStore.isAuth
-    ? { title: 'Выйти', path: '/auth', action: () => userStore.setIsAuth(false) }
+    ? {
+        title: 'Выйти',
+        path: '/auth',
+        action: () => {
+          localStorage.removeItem('token')
+          userStore.setIsAuth(false)
+        },
+      }
     : { title: 'Войти', path: '/auth' }
 })
 

@@ -13,7 +13,6 @@ export const login = async (email, password) => {
 
 export const check = async () => {
   try {
-    const token = localStorage.getItem('token')
     const { data } = await $authHost.get('users/me')
     localStorage.setItem('id', data.id)
     return data

@@ -6,7 +6,6 @@ import Appfooter from '@/components/Appfooter.vue'
 <template>
   <div class="about-page">
     <AppHeader />
-
     <main class="about-content">
       <section class="about-section">
         <h1 class="about-title">О StormWallet</h1>
@@ -86,14 +85,15 @@ import Appfooter from '@/components/Appfooter.vue'
 }
 
 .about-title {
-  font-size: 2.5rem;
+  font-size: clamp(2rem, 5vw, 2.5rem);
   font-weight: 700;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   color: #60a5fa;
+  line-height: 1.3;
 }
 
 .about-description {
-  font-size: 1.1rem;
+  font-size: clamp(1rem, 1.1vw, 1.1rem);
   line-height: 1.7;
   max-width: 800px;
 }
@@ -110,6 +110,7 @@ import Appfooter from '@/components/Appfooter.vue'
 .features-list li {
   margin-bottom: 0.8rem;
   position: relative;
+  font-size: clamp(0.95rem, 1.05vw, 1.05rem);
 }
 
 .features-list li::before {
@@ -122,26 +123,26 @@ import Appfooter from '@/components/Appfooter.vue'
 }
 
 .team-section {
-  margin: 5rem 0;
+  margin: 4rem 0;
 }
 
 .team-title {
-  font-size: 2rem;
+  font-size: clamp(1.7rem, 4vw, 2rem);
   font-weight: 600;
-  margin-bottom: 2.5rem;
+  margin-bottom: 2rem;
   color: #60a5fa;
 }
 
 .team-members {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
   gap: 2rem;
 }
 
 .team-member {
   background-color: #1f2937;
   border-radius: 0.5rem;
-  padding: 2rem;
+  padding: 1.5rem;
   transition:
     transform 0.3s ease,
     box-shadow 0.3s ease;
@@ -153,67 +154,130 @@ import Appfooter from '@/components/Appfooter.vue'
 }
 
 .member-avatar {
-  width: 60px;
-  height: 60px;
+  width: 56px;
+  height: 56px;
   background-color: #3b82f6;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   font-weight: bold;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.2rem;
 }
 
 .member-name {
-  font-size: 1.5rem;
+  font-size: clamp(1.3rem, 1.5vw, 1.5rem);
   font-weight: 600;
   margin-bottom: 0.5rem;
+  line-height: 1.3;
 }
 
 .member-role {
   color: #60a5fa;
   font-weight: 500;
-  margin-bottom: 1rem;
+  margin-bottom: 0.8rem;
+  font-size: clamp(0.9rem, 1vw, 1rem);
 }
 
 .member-bio {
   color: #d1d5db;
   line-height: 1.6;
+  font-size: clamp(0.9rem, 1vw, 1rem);
 }
 
 .mission-section {
-  margin-top: 5rem;
-  padding: 2rem;
+  margin-top: 4rem;
+  padding: 1.5rem;
   background-color: rgba(59, 130, 246, 0.1);
   border-radius: 0.5rem;
   border-left: 4px solid #3b82f6;
 }
 
 .mission-title {
-  font-size: 1.8rem;
+  font-size: clamp(1.5rem, 3.5vw, 1.8rem);
   font-weight: 600;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.2rem;
   color: #60a5fa;
 }
 
 .mission-text {
-  font-size: 1.1rem;
+  font-size: clamp(1rem, 1.1vw, 1.1rem);
   line-height: 1.7;
   max-width: 800px;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 992px) {
   .about-content {
-    padding-top: 5rem;
-  }
-
-  .about-title {
-    font-size: 2rem;
+    padding-top: 5.5rem;
   }
 
   .team-members {
-    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .about-content {
+    padding: 1.5rem 1rem;
+    padding-top: 5rem;
+  }
+
+  .about-section,
+  .team-section {
+    margin-bottom: 3rem;
+  }
+
+  .about-title,
+  .team-title,
+  .mission-title {
+    margin-bottom: 1.2rem;
+  }
+
+  .team-member {
+    padding: 1.2rem;
+  }
+
+  .member-avatar {
+    width: 48px;
+    height: 48px;
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+  }
+
+  .features-list {
+    padding-left: 1.2rem;
+  }
+
+  .mission-section {
+    margin-top: 3rem;
+    padding: 1.2rem;
+  }
+}
+@media (max-width: 480px) {
+  .about-content {
+    padding-top: 4.5rem;
+  }
+
+  .about-title {
+    font-size: 1.8rem;
+  }
+
+  .team-title,
+  .mission-title {
+    font-size: 1.6rem;
+  }
+
+  .team-member {
+    padding: 1rem;
+  }
+
+  .member-name {
+    font-size: 1.2rem;
+  }
+
+  .mission-text {
+    font-size: 0.95rem;
   }
 }
 </style>

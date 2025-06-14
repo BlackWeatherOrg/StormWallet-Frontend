@@ -8,9 +8,6 @@ import {
   DeleteOperation,
   UpdateOperation,
 } from '@/http/operationAPI'
-import { useUserStore } from '@/stores/UserStore'
-
-const userStore = useUserStore()
 const selectedDate = ref(new Date().toISOString().split('T')[0] + 'T00:00:00Z')
 const operations = ref([])
 const newOperation = ref({
@@ -111,11 +108,12 @@ const saveOperation = async () => {
 
     if (editingId.value) {
       await UpdateOperation(
-        editingId.value,         
+        editingId.value,
         tag.ID,
         newOperation.value.type,
         parseFloat(newOperation.value.amount),
-        selectedDate.value,)
+        selectedDate.value,
+      )
     } else {
       await CreateOperation(
         tag.ID,
@@ -463,6 +461,9 @@ onMounted(() => {
   border-radius: 0.5rem;
   padding: 1.5rem;
   margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 .operation-formm h2 {
@@ -490,9 +491,18 @@ onMounted(() => {
   border-radius: 0.375rem;
   color: #f3f4f6;
   font-size: 1rem;
+  box-sizing: border-box;
 }
-.formm-group input {
-  width: 96.5%;
+.formm-group input[type='number'] {
+  -moz-appearance: textfield;
+}
+.formm-group input[type='number']::-webkit-outer-spin-button,
+.formm-group input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.formm-group.amount-input {
+  position: relative;
 }
 .type-selector {
   display: flex;
@@ -737,9 +747,41 @@ onMounted(() => {
     padding: 0.75rem;
     width: 100%;
   }
+  .formm-group input {
+    width: 96%;
+  }
 
   .add-tag-formm {
     flex-direction: column;
+  }
+  .dashboard-container {
+    padding: 1rem;
+    padding-top: 5rem;
+  }
+  .formm-group input,
+  .formm-group select {
+    padding: 0.7rem;
+    font-size: 0.95rem;
+  }
+  .formm-group input {
+    width: 99%;
+  }
+  .operation-formm {
+    padding: 1.2rem;
+    gap: 1.2rem;
+    margin-bottom: 1.5rem;
+  }
+}
+@media (max-width: 480px) {
+  .formm-group input,
+  .formm-group select {
+    padding: 0.65rem;
+    font-size: 0.9rem;
+  }
+
+  .operation-formm {
+    padding: 1rem;
+    gap: 1rem;
   }
 }
 </style>

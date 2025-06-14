@@ -1,5 +1,4 @@
-import { $authHost, $host } from './index'
-import { jwtDecode } from 'jwt-decode'
+import { $authHost} from './index'
 
 export const FetchTag = async () => {
   try {

@@ -1,6 +1,4 @@
 import { $authHost, $host } from './index'
-import { jwtDecode } from 'jwt-decode'
-
 export const FetchOperation = async () => {
   try {
     const { data } = await $authHost.get('operations/')
@@ -43,5 +41,19 @@ export const UpdateOperation = async (id, tag_id, type, amount, Date) => {
     return data
   } catch (error) {
     throw error
+  }
+}
+
+export const FetchOperationStat = async (start, end) => {
+  try {
+    const { data } = await $authHost.get('operations/stats', {
+      params: {
+        dateStart: start,
+        dateEnd: end,
+      },
+    })
+    return data
+  } catch (error) {
+    console.error('Ошибка при проверке пользователя:', error)
   }
 }

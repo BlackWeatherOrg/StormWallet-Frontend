@@ -1,8 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import AppHeader from '../components/Appheader.vue'
-import Appfooter from '@/components/Appfooter.vue'
-import { FetchUser, check } from '@/http/userAPI'
+import { check } from '@/http/userAPI'
 import { useUserStore } from '@/stores/UserStore'
 import { useRouter } from 'vue-router'
 const router = useRouter()
@@ -26,6 +25,7 @@ function getRandomColor() {
 
 const Logout = () => {
   userStore.setIsAuth(false)
+  localStorage.removeItem('token');
   router.push('/')
 }
 
