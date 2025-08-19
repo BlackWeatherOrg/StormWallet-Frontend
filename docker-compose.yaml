@@ -1,0 +1,9 @@
+services:
+  frontend:
+    container_name: frontend
+    build:
+      dockerfile: deploy/Dockerfile
+      context: .
+    ports:
+      - '${APP_PORT:-8080}:80'
+    restart: unless-stopped
